@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Chat AI — Smart Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  padding: 16px 12px 40px;
+}
+
+.container { max-width: 640px; margin: 0 auto; }
+
+/* HEADER */
+.app-header { text-align: center; padding: 22px 0 18px; }
+.app-header h1 { color: #fff; font-size: 1.9rem; font-weight: 900; letter-spacing: -0.5px; }
+.app-header h1 span { color: #f7c948; }
+.app-header p { color: rgba(255,255,255,0.7); font-size: 0.88rem; margin-top: 4px; }
+
+/* CARD */
+.card {
+  background: #ffffff; border-radius: 22px;
+  padding: 26px 22px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+  margin-bottom: 16px;
+}
+
+/* PAYMENT GATE */
+.gate-top { text-align: center; padding-bottom: 18px; border-bottom: 1px solid #f0f0f0; }
+.lock-emoji { font-size: 2.8rem; margin-bottom: 8px; }
+.gate-top h2 { font-size: 1.35rem; font-weight: 900; color: #1a1a2e; }
+.gate-top p { color: #777; font-size: 0.88rem; margin-top: 6px; line-height: 1.5; }
+
+.price-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0 4px; }
+.price-pill {
+  background: linear-gradient(135deg, #f7c948, #f0901a);
+  color: #1a1a2e; font-size: 1.7rem; font-weight: 900;
+  padding: 10px 30px; border-radius: 50px;
+  box-shadow: 0 4px 18px rgba(247,201,72,0.45);
+}
+.price-note { font-size: 0.78rem; color: #999; text-align: center; }
+
+.feat-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 14px 0 20px; }
+.feat {
+  background: #f0f7ff; color: #0f3460; font-size: 0.73rem; font-weight: 700;
+  padding: 5px 13px; border-radius: 20px; border: 1px solid #cde3ff;
+}
+
+/* DEMO SECTION */
+.demo-section { background: #f8f9ff; border-radius: 16px; padding: 18px 16px; margin-bottom: 20px; }
+.demo-section-title {
+  font-size: 0.82rem; font-weight: 800; color: #0f3460;
+  text-align: center; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.demo-card {
+  background: #fff; border-radius: 12px; padding: 14px;
+  margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border-left: 4px solid #1a73e8;
+}
+.demo-card:last-child { margin-bottom: 0; border-left-color: #8c52ff; }
+.demo-badge {
+  display: inline-block; font-size: 0.65rem; font-weight: 800;
+  background: #1a73e8; color: #fff; padding: 3px 10px;
+  border-radius: 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.demo-badge.v2 { background: #8c52ff; }
+.demo-q { font-size: 0.79rem; font-weight: 700; color: #1a73e8; margin-bottom: 8px; }
+.demo-q.v2 { color: #8c52ff; }
+.demo-a { font-size: 0.81rem; color: #333; line-height: 1.6; }
+.demo-src { font-size: 0.71rem; color: #aaa; margin-top: 6px; font-style: italic; }
+
+.mindmap-mini {
+  background: #f0f7ff; border-radius: 10px; padding: 10px 12px;
+  margin-top: 10px; font-size: 0.78rem; color: #1a1a2e;
+  line-height: 1.9; border: 1px solid #d4e9ff;
+}
+.mm-center { font-weight: 800; color: #1a73e8; text-align: center; margin-bottom: 4px; }
+.mm-center.v2 { color: #8c52ff; }
+.mm-branch { display: flex; align-items: flex-start; gap: 7px; margin: 1px 0; }
+.mm-dot { width: 7px; height: 7px; border-radius: 50%; background: #1a73e8; flex-shrink: 0; margin-top: 6px; }
+.mm-dot.v2 { background: #8c52ff; }
+
+/* UPI BOX */
+.upi-box {
+  border: 2px dashed #f7c948; background: linear-gradient(135deg, #fffef0, #fff8d6);
+  border-radius: 16px; padding: 18px; text-align: center; margin-bottom: 16px;
+}
+.upi-box-title { font-size: 0.82rem; font-weight: 800; color: #7a5a00; margin-bottom: 8px; }
+.upi-id-display {
+  font-size: 1.25rem; font-weight: 900; color: #0f3460;
+  background: #fff; padding: 10px 18px; border-radius: 10px;
+  display: inline-block; word-break: break-all;
+  border: 1px solid #ffe082; margin-bottom: 10px; letter-spacing: 0.5px;
+}
+.copy-btn {
+  background: #f7c948; color: #1a1a2e; border: none;
+  padding: 7px 18px; border-radius: 20px; font-size: 0.78rem;
+  font-weight: 800; cursor: pointer; font-family: inherit;
+}
+.copy-btn:active { background: #f0901a; }
+.upi-wa-note { font-size: 0.8rem; color: #7a5a00; margin-top: 10px; line-height: 1.7; }
+.upi-wa-note b { color: #1a1a2e; }
+
+/* TXN INPUT */
+.txn-label { font-size: 0.82rem; font-weight: 700; color: #555; margin-bottom: 6px; }
+.txn-input {
+  width: 100%; padding: 13px 16px; border: 2px solid #e0e0e0;
+  border-radius: 12px; font-size: 0.95rem; outline: none;
+  font-family: inherit; transition: border 0.2s; margin-bottom: 10px;
+}
+.txn-input:focus { border-color: #1a73e8; }
+.unlock-btn {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, #1a73e8, #0f3460);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: 800; cursor: pointer;
+  font-family: inherit; box-shadow: 0 4px 18px rgba(26,115,232,0.4);
+  transition: opacity 0.2s;
+}
+.unlock-btn:hover { opacity: 0.92; }
+
+/* MAIN APP */
+#mainApp { display: none; }
+
+.upload-zone {
+  border: 2.5px dashed #1a73e8; border-radius: 16px;
+  padding: 28px 16px; background: #f0f7ff;
+  text-align: center; cursor: pointer; transition: background 0.2s;
+}
+.upload-zone:hover { background: #e3f0ff; }
+.upload-icon { font-size: 2.4rem; margin-bottom: 8px; }
+.upload-zone p { color: #555; font-size: 0.88rem; margin-bottom: 14px; line-height: 1.6; }
+.upload-zone input { display: none; }
+.upload-btn-label {
+  background: linear-gradient(135deg, #1a73e8, #0f3460);
+  color: #fff; padding: 11px 26px; border-radius: 50px;
+  font-weight: 800; font-size: 0.88rem; display: inline-block;
+}
+#pdfStatus { margin-top: 12px; font-size: 0.88rem; font-weight: 700; min-height: 22px; color: #1a9e55; }
+
+/* CHAT */
+.chat-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.ai-avatar {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: linear-gradient(135deg, #1a73e8, #8c52ff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; flex-shrink: 0;
+}
+.chat-meta h3 { font-size: 0.98rem; font-weight: 800; color: #1a1a2e; }
+.chat-meta p { font-size: 0.76rem; color: #999; }
+.live-dot {
+  width: 8px; height: 8px; background: #1a9e55; border-radius: 50%;
+  display: inline-block; margin-left: 6px; animation: livepulse 1.5s infinite;
+}
+@keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#messages {
+  height: 400px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 2px; scroll-behavior: smooth;
+}
+#messages::-webkit-scrollbar { width: 4px; }
+#messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+.msg {
+  max-width: 90%; padding: 12px 15px; border-radius: 18px;
+  font-size: 0.86rem; line-height: 1.6; word-break: break-word;
+}
+.msg.user {
+  background: linear-gradient(135deg, #1a73e8, #0f3460);
+  color: #fff; align-self: flex-end; border-bottom-right-radius: 4px;
+}
+.msg.ai {
+  background: #f4f6fb; color: #1a1a2e;
+  align-self: flex-start; border-bottom-left-radius: 4px;
+}
+.msg.ai .ai-lbl {
+  font-size: 0.75rem; font-weight: 800; color: #1a73e8;
+  display: block; margin-bottom: 5px;
+}
+.msg.system {
+  background: #fffbe6; color: #7a5a00; align-self: center;
+  font-size: 0.76rem; text-align: center; padding: 7px 16px;
+  border-radius: 20px; max-width: 95%; border: 1px solid #ffe082;
+}
+
+.loading-wrap {
+  display: none; align-self: flex-start; background: #f4f6fb;
+  padding: 12px 18px; border-radius: 18px; border-bottom-left-radius: 4px;
+  align-items: center; gap: 4px;
+}
+.loading-wrap span {
+  width: 7px; height: 7px; background: #aaa; border-radius: 50%;
+  display: inline-block; animation: ldot 1s infinite;
+}
+.loading-wrap span:nth-child(2) { animation-delay: 0.18s; }
+.loading-wrap span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes ldot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
+
+.quick-row { display: flex; gap: 7px; flex-wrap: wrap; margin: 12px 0 10px; }
+.qbtn {
+  background: #f0f7ff; color: #1a73e8; border: 1px solid #cde3ff;
+  padding: 7px 13px; border-radius: 20px; font-size: 0.74rem;
+  font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.qbtn:hover { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+
+.input-row { display: flex; gap: 8px; margin-top: 4px; }
+.input-row input {
+  flex: 1; padding: 12px 18px; border: 2px solid #e0e0e0;
+  border-radius: 50px; font-size: 0.88rem; outline: none;
+  font-family: inherit; transition: border 0.2s;
+}
+.input-row input:focus { border-color: #1a73e8; }
+.send-btn {
+  width: 46px; height: 46px;
+  background: linear-gradient(135deg, #1a73e8, #0f3460);
+  color: #fff; border: none; border-radius: 50%;
+  font-size: 1.1rem; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s;
+}
+.send-btn:hover { opacity: 0.88; }
+
+#apiWarn {
+  display: none; background: #fff3cd; border: 1px solid #ffc107;
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 0.79rem; color: #856404; margin-top: 10px; line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <h1>🤖 PDF Chat <span>AI</span></h1>
+    <p>Koi bhi PDF upload karo — AI Mind Map se samjhayega!</p>
+  </div>
+
+  <!-- ══════════ PAYMENT GATE ══════════ -->
+  <div class="card" id="paymentGate">
+
+    <div class="gate-top">
+      <div class="lock-emoji">🔐</div>
+      <h2>Premium AI Access Unlock Karo</h2>
+      <p>Apna PDF upload karo, kuch bhi poocho —<br><b>AI Mind Map + Full Details</b> ke saath samjhayega</p>
+    </div>
+
+    <div class="price-row">
+      <div class="price-pill">₹999</div>
+    </div>
+    <p class="price-note">One-time • Lifetime Access • Unlimited PDFs</p>
+
+    <div class="feat-row">
+      <span class="feat">✅ Unlimited PDF</span>
+      <span class="feat">✅ Hindi + English</span>
+      <span class="feat">✅ Mind Map View</span>
+      <span class="feat">✅ Full Description</span>
+      <span class="feat">✅ Lifetime Access</span>
+    </div>
+
+    <!-- DEMOS -->
+    <div class="demo-section">
+      <div class="demo-section-title">👀 Live Examples — AI Kaise Jawab Deta Hai</div>
+
+      <!-- Demo 1 -->
+      <div class="demo-card">
+        <span class="demo-badge">📄 Demo 1 — Legal Contract</span>
+        <div class="demo-q">❓ "Is contract mein rent kitna hai aur kab badhega?"</div>
+        <div class="demo-a">
+          <b>🤖 AI ka Jawab:</b><br>
+          ✅ <b>Current Rent:</b> ₹15,000/month — 5 tarikh tak pay karna hoga<br>
+          📈 <b>Increment:</b> Har 11 mahine baad 10% — Nov 2025 se ₹16,500<br>
+          ⚠️ <b>Late Fee:</b> 5 din late = ₹500 penalty automatically lagegi
+        </div>
+        <div class="mindmap-mini">
+          <div class="mm-center">🗺️ MIND MAP — Rent Contract</div>
+          <div class="mm-branch"><div class="mm-dot"></div><div>💰 Rent → ₹15,000/month (deadline: 5 tarikh)</div></div>
+          <div class="mm-branch"><div class="mm-dot"></div><div>📈 Increment → 11 mahine baad → +10% → ₹16,500</div></div>
+          <div class="mm-branch"><div class="mm-dot"></div><div>⚠️ Late Penalty → 5 din ke baad = ₹500 extra</div></div>
+          <div class="mm-branch"><div class="mm-dot"></div><div>📍 Source → Page 3, Clause 4.2</div></div>
+        </div>
+        <div class="demo-src">📌 Source: Contract Page 3, Clause 4.2</div>
+      </div>
+
+      <!-- Demo 2 -->
+      <div class="demo-card">
+        <span class="demo-badge v2">📊 Demo 2 — Business Report</span>
+        <div class="demo-q v2">❓ "Company ka profit kitna tha aur kya problem thi?"</div>
+        <div class="demo-a">
+          <b>🤖 AI ka Jawab:</b><br>
+          ✅ <b>Total Profit:</b> Q3 mein ₹42 lakh — pichle saal se 18% zyada<br>
+          📉 <b>Problem:</b> Raw material cost 25% badh gayi — margin gira<br>
+          🎯 <b>Solution:</b> 3 naye suppliers se negotiations chal rahi hain
+        </div>
+        <div class="mindmap-mini">
+          <div class="mm-center v2">🗺️ MIND MAP — Q3 Business Performance</div>
+          <div class="mm-branch"><div class="mm-dot v2"></div><div>💹 Profit → ₹42 lakh (+18% year-on-year)</div></div>
+          <div class="mm-branch"><div class="mm-dot v2"></div><div>📉 Problem → Raw Material Cost +25% → Margin Down</div></div>
+          <div class="mm-branch"><div class="mm-dot v2"></div><div>🔧 Solution → 3 new supplier deals in progress</div></div>
+          <div class="mm-branch"><div class="mm-dot v2"></div><div>📍 Source → Annual Report, Page 7–8</div></div>
+        </div>
+        <div class="demo-src">📌 Source: Annual Report Page 7–8</div>
+      </div>
+    </div>
+    <!-- END DEMOS -->
+
+    <!-- UPI BOX -->
+    <div class="upi-box">
+      <div class="upi-box-title">👇 Is UPI ID pe ₹999 Pay Karo</div>
+      <div class="upi-id-display" id="upiText">9277148543@nyes</div><br>
+      <button class="copy-btn" onclick="copyUPI()">📋 UPI ID Copy Karo</button>
+      <div class="upi-wa-note">
+        ✅ Payment ke baad <b>screenshot + Transaction ID (UTR)</b><br>
+        WhatsApp karo: <b>📱 +91-6393389492</b><br>
+        <span style="font-size:0.75rem;color:#999;">Hum verify karke aapko Unlock Code WhatsApp pe bhejenge 🙏</span>
+      </div>
+    </div>
+
+    <!-- UNLOCK INPUT -->
+    <div class="txn-label">🔑 Humara bheja hua Unlock Code ya UTR Number daalo:</div>
+    <input type="text" class="txn-input" id="txnInput" placeholder="e.g. UNLOCK-8842 ya UTR number">
+    <button class="unlock-btn" onclick="verifyPayment()">🚀 Verify &amp; Unlock Karo</button>
+
+  </div>
+  <!-- END GATE -->
+
+
+  <!-- ══════════ MAIN APP ══════════ -->
+  <div id="mainApp">
+
+    <!-- Upload Card -->
+    <div class="card">
+      <div class="upload-zone" onclick="document.getElementById('pdfFile').click()">
+        <div class="upload-icon">📂</div>
+        <p>
+          Click karo aur apna PDF upload karo<br>
+          <span style="font-size:0.78rem;color:#aaa;">Contract • Report • Book • Resume • Notes — koi bhi!</span>
+        </p>
+        <div class="upload-btn-label">📎 PDF Choose Karo</div>
+        <input type="file" id="pdfFile" accept=".pdf" onchange="loadPDF(this)">
+        <div id="pdfStatus"></div>
+      </div>
+    </div>
+
+    <!-- Chat Card -->
+    <div class="card">
+      <div class="chat-header-row">
+        <div class="ai-avatar">🤖</div>
+        <div class="chat-meta">
+          <h3>PDF AI Assistant <span class="live-dot"></span></h3>
+          <p>Mind Map + Full Details — koi bhi sawaal poocho</p>
+        </div>
+      </div>
+
+      <div id="messages">
+        <div class="msg system">👋 Pehle PDF upload karo — phir koi bhi sawaal poocho!</div>
+      </div>
+      <div class="loading-wrap" id="loadingDots">
+        <span></span><span></span><span></span>
+      </div>
+
+      <div id="apiWarn">
+        ⚠️ <b>API Key nahi hai!</b> index.html mein <code>GROQ_API_KEY</code> update karo.<br>
+        Free key milti hai: <b>console.groq.com</b>
+      </div>
+
+      <div class="quick-row">
+        <button class="qbtn" onclick="quickAsk('Is document ka poora summary aur mind map do')">📋 Summary + Map</button>
+        <button class="qbtn" onclick="quickAsk('Main important points kya hain? Mind map mein dikhao')">🎯 Main Points</button>
+        <button class="qbtn" onclick="quickAsk('Is document mein sabhi important dates aur numbers batao')">📅 Dates &amp; Numbers</button>
+        <button class="qbtn" onclick="quickAsk('Is document mein koi risk, warning ya important clause hai?')">⚠️ Risks</button>
+        <button class="qbtn" onclick="quickAsk('Is document ko simple language mein explain karo — jaise kisi dost ko samjha rahe ho')">💬 Simple Explain</button>
+      </div>
+
+      <div class="input-row">
+        <input type="text" id="userInput"
+          placeholder="Kuch bhi poocho is PDF ke baare mein..."
+          onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()" title="Send">➤</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- END APP -->
+
+</div>
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  /* ══════════════════════════════════════════════════
+     🔑  GROQ API KEY — Yahan apni key daalo
+         FREE milti hai: https://console.groq.com
+  ══════════════════════════════════════════════════ */
+  const GROQ_API_KEY = "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";
+  /* ════════════════════════════════════════════════ */
+
+  // ✅ Valid Codes List — Jab koi payment kare, uska UTR/code yahan add karo:
+  const VALID_CODES = ['DEMO123'];
+
+  let pdfText = '';
+  let pdfName = '';
+
+  /* ── Copy UPI ── */
+  function copyUPI() {
+    const upi = document.getElementById('upiText').innerText.trim();
+    const fallback = () => {
+      const el = document.createElement('textarea');
+      el.value = upi; document.body.appendChild(el);
+      el.select(); document.execCommand('copy');
+      document.body.removeChild(el);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(upi).catch(fallback);
+    } else { fallback(); }
+    alert('✅ UPI ID Copy Ho Gaya!\n\n' + upi + '\n\nAbhi Google Pay / PhonePe / Paytm mein paste karo.');
+  }
+
+  /* ── Verify Payment ── */
+  function verifyPayment() {
+    const txn = document.getElementById('txnInput').value.trim();
+    if (!txn) { alert('⚠️ Pehle Unlock Code ya Transaction UTR daalo!'); return; }
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem('validTxns') || '[]'); } catch(e){}
+    if ([...VALID_CODES, ...saved].includes(txn)) {
+      try { localStorage.setItem('pdf_unlocked', txn); } catch(e){}
+      unlockApp();
+    } else {
+      alert(
+        '❌ Code match nahi hua!\n\n' +
+        'Agar payment kar di hai to:\n' +
+        '📱 Screenshot + UTR bhejo WhatsApp pe:\n' +
+        '+91-6393389492\n\n' +
+        'Hum verify karke Unlock Code bhejenge. 🙏'
+      );
+    }
+  }
+
+  /* ── Unlock ── */
+  function unlockApp() {
+    document.getElementById('paymentGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    if (GROQ_API_KEY === 'gsk_YAHAN_APNI_KEY_DAALO') {
+      document.getElementById('apiWarn').style.display = 'block';
+    }
+  }
+
+  /* ── Auto unlock ── */
+  window.addEventListener('load', () => {
+    try { if (localStorage.getItem('pdf_unlocked')) unlockApp(); } catch(e){}
+  });
+
+  /* ── Load PDF ── */
+  async function loadPDF(input) {
+    const file = input.files[0];
+    if (!file) return;
+    pdfText = ''; pdfName = file.name;
+    const s = document.getElementById('pdfStatus');
+    s.style.color = '#1a73e8';
+    s.textContent = '⏳ PDF load ho raha hai...';
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+        const total = pdf.numPages;
+        const limit = Math.min(total, 30);
+        for (let i = 1; i <= limit; i++) {
+          s.textContent = `⏳ Page ${i}/${limit} read ho rahi hai...`;
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pdfText += content.items.map(x => x.str).join(' ') + '\n';
+        }
+        s.style.color = '#1a9e55';
+        s.textContent = `✅ "${file.name}" ready! (${total} pages load hue)`;
+        addMsg('system', `📄 "${file.name}" upload ho gaya! Ab neeche koi bhi sawaal poocho 👇`);
+      } catch(err) {
+        s.style.color = '#e53935';
+        s.textContent = '❌ PDF read nahi hua. Doosra file try karo.';
+      }
+    };
+    reader.onerror = () => {
+      document.getElementById('pdfStatus').style.color = '#e53935';
+      document.getElementById('pdfStatus').textContent = '❌ File error! Dobara try karo.';
+    
