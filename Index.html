@@ -489,4 +489,124 @@ body {
     reader.onerror = () => {
       document.getElementById('pdfStatus').style.color = '#e53935';
       document.getElementById('pdfStatus').textContent = '❌ File error! Dobara try karo.';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ── Add message ── */
+  function addMsg(type, text) {
+    const messagesDiv = document.getElementById('messages');
+    const msg = document.createElement('div');
+    msg.className = `msg ${type}`;
+
+    if (type === 'ai') {
+      msg.innerHTML = `<span class="ai-lbl">🤖 PDF Assistant</span>` + formatMessageText(text);
+    } else {
+      msg.innerHTML = formatMessageText(text);
+    }
     
+    messagesDiv.appendChild(msg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  /* ── Format message text ── */
+  function formatMessageText(text) {
+    let formatted = text;
+    // Replace **bold** with <b>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    // Replace *italic* with <i>
+    formatted = formatted.replace(/\*(.*?)\*/g, '<i>$1</i>');
+    // Replace `code` with <code>
+    formatted = formatted.replace(/`(.*?)`/g, '<code>$1</code>');
+    // Replace markdown bullets with Unicode bullets
+    formatted = formatted.replace(/^\s*-\s+(.*)/gm, '• $1');
+    // Convert newlines to <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+    return formatted;
+  }
+
+  /* ── Send Message ── */
+  async function sendMessage() {
+    const userInput = document.getElementById('userInput');
+    const query = userInput.value.trim();
+    if (!query) return;
+
+    if (!pdfText) {
+      alert('⚠️ Pehle ek PDF upload karo!');
+      return;
+    }
+
+    addMsg('user', query);
+    userInput.value = '';
+
+    const loadingDots = document.getElementById('loadingDots');
+    loadingDots.style.display = 'flex';
+
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an expert AI PDF Assistant. Use the provided PDF context to answer the user's question accurately in Hinglish/Hindi or English (matching the user's style/language).
+Keep your answers highly structured and visual.
+Whenever the user asks for a 'mind map' or 'summary with mind map' (or similar visual representation), you must generate a beautiful, compact HTML mind map using these classes:
+- Wrap the mind map in: <div class="mindmap-mini">
+- Add a center node: <div class="mm-center">🗺️ MIND MAP — [Topic]</div>
+- Add branch nodes: <div class="mm-branch"><div class="mm-dot"></div><div>[Your key point here]</div></div> (use different icons/emojis if applicable)
+- You can use v2 class variants for visual variety: e.g., <div class="mm-center v2">, <div class="mm-dot v2">.
+
+Make sure to ALWAYS format your regular points with emojis and clear bolds. Keep descriptions concise, informative, and professional.`
+            },
+            {
+              role: 'user',
+              content: `Here is the text extracted from the PDF (first 30 pages max):
+---
+${pdfText}
+---
+
+Question: ${query}`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 2048
+        })
+      });
+
+      loadingDots.style.display = 'none';
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error('Groq API Error:', errData);
+        addMsg('system', `❌ API Error! Code: ${response.status}. ${errData?.error?.message || 'Please check your API Key or Network connection.'}`);
+        return;
+      }
+
+      const data = await response.json();
+      const answer = data.choices[0].message.content;
+      addMsg('ai', answer);
+
+    } catch (err) {
+      loadingDots.style.display = 'none';
+      console.error(err);
+      addMsg('system', '❌ Network error! Please try again.');
+    }
+  }
+
+  /* ── Quick Ask ── */
+  function quickAsk(text) {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  }
+</script>
+</body>
+</html>
